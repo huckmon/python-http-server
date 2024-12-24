@@ -1,2 +1,4 @@
 # HTTP-server-project
-a personal project to make an HTTP server
+A personal project to make an HTTP server in python.
+
+Server will have be capable of receiving and processing GET, HEAD and OPTIONS request methods.
