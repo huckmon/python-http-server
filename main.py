@@ -2,6 +2,7 @@ import socket
 import sys
 import mimetypes
 import datetime
+import re
 
 
 class HTTP_server:
@@ -56,33 +57,47 @@ class HTTP_server:
                 request_target = "./index.html"
 
                 request_target_file = open(request_target, "r")
-                sys.getsizeof(request_target_file)
-                content_type = mimetypes.guess_type(request_target)
+                content_length = sys.getsizeof(request_target_file)
+
+                self.parse_content_type(request_target)
                 print("mime type of request-target is", content_type)
+
                 response_status_code = "200 OK"
+                response_start_line = "HTTP/1.1 " + response_status_code
+                print(response_start_line)
+
+                date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
+                print(date_header)
+
+                response_message = response_start_line + "\r\n" + conte
 
             elif (request_target != "./"):
-
                 request_target_file = open(request_target, "r")
-                sys.getsizeof(request_target_file)
-                content_type = mimetypes.guess_type(request_target)
+                content_length = sys.getsizeof(request_target_file)
+
+                self.parse_content_type(request_target)
                 print("mime type of request-target is", content_type)
+
                 response_status_code = "200 OK"
+                response_start_line = "HTTP/1.1 " + response_status_code
+                print(response_start_line)
+
+                date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
+                print(date_header)
 
             else:
                 print("request-target is 404 Not Found")
+
                 response_status_code = "404 Not Found"
+                response_start_line = "HTTP/1.1 " + response_status_code
+                print(response_start_line)
+
+                date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
+                print(date_header)
+
+                #response_message = response_start_line + "\r\n" +
 
 
-            # get the length of the content and content type here
-
-            response_start_line = "HTTP/1.1 " + response_status_code
-            print(response_start_line)
-
-            date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
-            print(date_header)
-
-            #content_type_response_header = request_target_type
 
         elif ("HEAD" in request_start_line[0:4]):
             print("HEAD request confirmed")
@@ -92,6 +107,20 @@ class HTTP_server:
 
         else:
             print("Invalid request", request_start_line)
+
+
+    def parse_content_type(self, request_target):
+
+        # a function that just gets rid of the unwanted characters in the mimetype so that I don't need it repeated in other places
+        mime_content_type = mimetypes.guess_type(request_target)
+        print(mime_content_type[0])
+        temp_content_type = re.sub("\(|\)|\'", "", mime_content_type[0])
+
+        #for x in range(len(temp_content_type)):
+        #    if (temp_content_type[x:(x+2)] == ", "):
+        #        content_type = temp_content_type[:(x)]
+        print(temp_content_type)
+        return content_type
 
 
 
