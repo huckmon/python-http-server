@@ -1,4 +1,6 @@
 import socket
+import sys
+import magic
 
 
 class HTTP_server:
@@ -41,8 +43,38 @@ class HTTP_server:
             # loop through and seperate the request-target to use later in finding resource
             for x in range(len(request_start_line)):
                 if (request_start_line[x:(x+8)] == "HTTP/1.1"):
-                    request_target = request_start_line[4:(x-1)]
+                    # add a dot so that request-target is seached for so the http server can be placed in somewhere other than root directory
+                    request_target = "." + request_start_line[4:(x-1)]
                     print("request-target is", request_target)
+
+            # verify if the request-target is valid here
+
+
+            try:
+                #request_target_file = open(request_target, "r")
+                #sys.getsizeof(request_target_file)
+                self.get_response_body(request_target)
+
+            # add an except to prevent error from interupting service if request-target is invalid
+            except:
+                if (request_target == "./"):
+                    # set the index file as the body response
+                    #request_target_file = open(request_target, "r")
+                    #sys.getsizeof(request_target_file)
+                    # manually set the request target as the index page so there's a default page
+                    request_target = "./index.html"
+                    self.get_response_body(request_target)
+
+                else:
+                    print("request-target is 404 Not Found")
+                    response_status_code = "404 Not Found"
+
+
+            # get the length of the content and content type here
+
+            response_start_line = "HTTP/1.1 " + response_status_code
+
+            #content_type_response_header = request_target_type
 
         elif ("HEAD" in request_start_line[0:4]):
             print("HEAD request confirmed")
@@ -52,6 +84,16 @@ class HTTP_server:
 
         else:
             print("Invalid request")
+
+
+    def get_response_body(self, request_target):
+        request_target_file = open(request_target, "r")
+        sys.getsizeof(request_target_file)
+
+        mime = magic.open(magic.MAGIC_MIME)
+        mime.load()
+        mime.file(request_target)
+
 
 
 
