@@ -7,6 +7,8 @@ import re
 
 class HTTP_server:
 
+    http_ver = "HTTP/1.1 "
+
     def __init__(self, host='127.0.0.1', port=10000):
         self.host = host
         self.port = port
@@ -29,6 +31,7 @@ class HTTP_server:
             #connection.sendall(response)
             connection.close()
 
+
     def request_handler(self, data):
 
         # get length of request for request length
@@ -45,13 +48,14 @@ class HTTP_server:
             print("GET request confirmed")
 
             # loop through and seperate the request-target to use later in finding resource
+            # probably want to replace this with regex queries later so that it's not so scuffed
             for x in range(len(request_start_line)):
                 if (request_start_line[x:(x+8)] == "HTTP/1.1"):
                     # add a dot so that request-target is seached for so the http server can be placed in somewhere other than root directory
                     request_target = "." + request_start_line[4:(x-1)]
                     print("request-target is", request_target)
 
-
+            # if pointing at root, redirect to index file
             if (request_target == "./"):
                 # manually set the request target as the index page so there's a default page
                 request_target = "./index.html"
@@ -59,43 +63,33 @@ class HTTP_server:
                 request_target_file = open(request_target, "r")
                 content_length = sys.getsizeof(request_target_file)
 
-                self.parse_content_type(request_target)
-                print("mime type of request-target is", content_type)
+                # get the content type and saves as a tuple natively, don't need to modify as can just take part of tuple
+                self.get_content_mime_type(request_target)
 
                 response_status_code = "200 OK"
-                response_start_line = "HTTP/1.1 " + response_status_code
-                print(response_start_line)
 
-                date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
-                print(date_header)
 
-                response_message = response_start_line + "\r\n" + conte
-
-            elif (request_target != "./"):
-                request_target_file = open(request_target, "r")
-                content_length = sys.getsizeof(request_target_file)
-
-                self.parse_content_type(request_target)
-                print("mime type of request-target is", content_type)
-
-                response_status_code = "200 OK"
-                response_start_line = "HTTP/1.1 " + response_status_code
-                print(response_start_line)
-
-                date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
-                print(date_header)
-
+            # no reason to call any but else since can just use except to throw a 400 or 404
+            # handles non-root and invalid path requests
             else:
-                print("request-target is 404 Not Found")
+                try:
+                    request_target_file = open(request_target, "r")
+                    content_length = sys.getsizeof(request_target_file)
 
-                response_status_code = "404 Not Found"
-                response_start_line = "HTTP/1.1 " + response_status_code
-                print(response_start_line)
+                    self.get_content_mime_type(request_target)
 
-                date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
-                print(date_header)
+                    response_status_code = "200 OK"
+                except:
+                    response_status_code = "404 Not Found"
 
-                #response_message = response_start_line + "\r\n" +
+
+            response_start_line = http_ver + response_status_code
+            print("response start line is", response_start_line)
+
+            date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
+            print(date_header)
+
+
 
 
 
@@ -109,17 +103,11 @@ class HTTP_server:
             print("Invalid request", request_start_line)
 
 
-    def parse_content_type(self, request_target):
-
-        # a function that just gets rid of the unwanted characters in the mimetype so that I don't need it repeated in other places
-        mime_content_type = mimetypes.guess_type(request_target)
-        print(mime_content_type[0])
-        temp_content_type = re.sub("\(|\)|\'", "", mime_content_type[0])
-
-        #for x in range(len(temp_content_type)):
-        #    if (temp_content_type[x:(x+2)] == ", "):
-        #        content_type = temp_content_type[:(x)]
-        print(temp_content_type)
+    def get_content_mime_type(self, request_target):
+        # quick function to get the mime type and then throw it back so this isn't repeated multiple times'
+        content_type = mimetypes.guess_type(request_target)
+        print("mime type of request-target is", content_type[0])
+        content_type = content_type[0]
         return content_type
 
 
