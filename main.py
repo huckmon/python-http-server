@@ -1,6 +1,7 @@
 import socket
 import sys
 import mimetypes
+import datetime
 
 
 class HTTP_server:
@@ -77,6 +78,9 @@ class HTTP_server:
 
             response_start_line = "HTTP/1.1 " + response_status_code
             print(response_start_line)
+
+            date_header = datetime.datetime.now().strftime("%a, %d, %b, %Y, %H:%M:%S GMT")
+            print(date_header)
 
             #content_type_response_header = request_target_type
 
