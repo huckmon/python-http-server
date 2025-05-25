@@ -9,6 +9,8 @@ class HTTP_server:
 
     # A constant used the append the http version. This should never change
     HTTP_VER = "HTTP/1.1 "
+    TOTAL_CONNECTIONS = 1
+    DATA_TO_READ = 1024
 
     # initial function that declares the host and port for the http server
     def __init__(self, host='127.0.0.1', port=10002):
@@ -21,7 +23,7 @@ class HTTP_server:
         # binds the socket to the port
         server_socket.bind((self.host, self.port))
         # listen for incoming connection(s)
-        server_socket.listen(1)
+        server_socket.listen(self.TOTAL_CONNECTIONS)
         print('listening at', server_socket.getsockname())
 
         while True:
@@ -32,7 +34,7 @@ class HTTP_server:
             connection, client_addr = server_socket.accept()
             print('Connection accepted ' )
             # recieve data from the socket. Specify a maximum amount of data to be read at once (currently first 1024 bytes)
-            data = connection.recv(1024)
+            data = connection.recv(self.DATA_TO_READ)
 
             #if data:
             # Generate the response message by calling the request_handler function with the data recieved from the connection as input
@@ -57,10 +59,15 @@ class HTTP_server:
         data_array = data.splitlines()
         request_start_line = data_array[0]
         print(request_start_line)
+        for x in range(len(request_start_line)):
+            # loop throught the request start line and seperate the request type
+            if request_start_line[x] == " ":
+                current_request_method = request_start_line[0:x]
+                print('Current request method: ' + current_request_method)
+                break
 
-
-        if ("GET" in request_start_line[0:3]):
-            print("GET request confirmed")
+        if ("GET" in current_request_method):
+            print("GET Request Confirmed")
 
             # loop through and seperate the request-target to use later in finding resource
             # probably want to replace this with regex queries later so that it's not so scuffed
@@ -68,6 +75,7 @@ class HTTP_server:
                 if (request_start_line[x:(x+8)] == "HTTP/1.1"):
                     # add a dot so that request-target is seached for so the http server can be placed in somewhere other than root directory
                     request_target = "." + request_start_line[4:(x-1)]
+                    break
 
             # if pointing at root, redirect to index file
             if (request_target == "./"):
@@ -86,9 +94,10 @@ class HTTP_server:
                     content_length_header = "Content-Length: " + str(sys.getsizeof(request_target_file))
                     response_status_code = "200 OK"
                 except:
+                    # The reuested item wasn't found, return a 404 respose
                     response_status_code = "404 Not Found"
 
-                    # change the request_target_file to the stock 404 file to avoid renaming variables or adding checks
+                    # change the request_target file to the stock 404 file to avoid renaming variables or adding checks. Allows users to edit 404 page
                     request_target_file = open("./404-page.html", "r")
                     content_length_header = "Content-Length: " + str(sys.getsizeof(request_target_file))
 
@@ -100,6 +109,7 @@ class HTTP_server:
             http_page_line_array = request_target_file.read().splitlines()
             http_page_line = ""
 
+            # loops through the lines in the request_target_file as an array
             for x in range(len(http_page_line_array)):
                 http_page_line = http_page_line + "\r\n" + http_page_line_array[x]
 
@@ -111,7 +121,7 @@ class HTTP_server:
 
 
 
-        elif ("HEAD" in request_start_line[0:4]):
+        elif ("HEAD" in current_request_method):
             print("HEAD request confirmed")
 
             # loop through and seperate the request-target to use later in finding resource
@@ -120,6 +130,7 @@ class HTTP_server:
                 if (request_start_line[x:(x+8)] == "HTTP/1.1"):
                     # add a dot so that request-target is seached for so the http server can be placed in somewhere other than root directory"
                     request_target = "." + request_start_line[5:(x-1)]
+                    break
 
             # if pointing at root, redirect to index file
             if (request_target == "./"):
@@ -154,7 +165,7 @@ class HTTP_server:
             return response_message
 
 
-        elif ("OPTIONS" in request_start_line[0:7]):
+        elif ("OPTIONS" in current_request_method):
             print("OPTIONS request confirmed")
 
             response_status_code = "204 No Content"
@@ -167,8 +178,9 @@ class HTTP_server:
 
             return response_message
 
-        # list all other request methods and add a 501 response
-        elif (("POST" in request_start_line[0:4]) or ("PUT" in request_start_line[0:3]) or ("DELETE" in request_start_line[0:6]) or ("CONNECT" in request_start_line[0:7]) or ("TRACE" in request_start_line[0:5]) or ("PATCH" in request_start_line[0:5])):
+        # list all other request methods and add a 501 response NOTE I hate these large if statments, try moving to switch statements
+        # the array mentions are because I found it easier to just check if that word exactly is there. NOTE might be easer
+        elif (("POST" in current_request_method) or ("PUT" in current_request_method) or ("DELETE" in current_request_method) or ("CONNECT" in current_request_method) or ("TRACE" in current_request_method) or ("PATCH" in current_request_method)):
 
             response_status_code = "501 Not Implemented"
             response_start_line = self.HTTP_VER + response_status_code
