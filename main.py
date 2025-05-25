@@ -153,7 +153,7 @@ class HTTP_server:
             return response_message
 
         # list all other request methods and add a 501 response
-        elif (("POST" in request_start_line[0:4]) or ("PUT" in request_start_line[0:3]) OR ("DELETE" in request_start_line[0:6]) or ("CONNECT" in request_start_line[0:7]) or ("TRACE" in request_start_line[0:5]) or ("PATCH" in request_start_line[0:5])):
+        elif (("POST" in request_start_line[0:4]) or ("PUT" in request_start_line[0:3]) or ("DELETE" in request_start_line[0:6]) or ("CONNECT" in request_start_line[0:7]) or ("TRACE" in request_start_line[0:5]) or ("PATCH" in request_start_line[0:5])):
 
             response_status_code = "501 Not Implemented"
             response_start_line = self.HTTP_VER + response_status_code
