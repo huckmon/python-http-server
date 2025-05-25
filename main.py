@@ -7,29 +7,44 @@ import re
 
 class HTTP_server:
 
+    # A constant used the append the http version. This should never change
     HTTP_VER = "HTTP/1.1 "
 
+    # initial function that declares the host and port for the http server
     def __init__(self, host='127.0.0.1', port=10002):
         self.host = host
         self.port = port
 
     def start(self):
+        # Creates a TCP/IP socket using INET (ipv4) address family and Sock Stream (sock stream is a SocketKind)
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # binds the socket to the port
         server_socket.bind((self.host, self.port))
+        # listen for incoming connection(s)
         server_socket.listen(1)
         print('listening at', server_socket.getsockname())
 
         while True:
 
+            # accept a connection. The return value is a pair (connection, address)
+            # connection is a new socket object usable to send and recieve data on the connection (i.e. connecting socket)
+            # client_address is the address bound to the socket on the other end of the connection
             connection, client_addr = server_socket.accept()
+            print('Connection accepted ' )
+            # recieve data from the socket. Specify a maximum amount of data to be read at once (currently first 1024 bytes)
             data = connection.recv(1024)
 
             #if data:
+            # Generate the response message by calling the request_handler function with the data recieved from the connection as input
             response_message = self.request_handler(data)
+            # send back data to the client
             connection.sendall(response_message)
+            print('Response Sent')
 
             #else:
+            # close the connection
             connection.close()
+            print('Connection Closed')
 
 
     def request_handler(self, data):
@@ -192,5 +207,6 @@ class HTTP_server:
 
 
 if __name__ == '__main__':
+    # start the http server when script is executed
     server = HTTP_server()
     server.start()
