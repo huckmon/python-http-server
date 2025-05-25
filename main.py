@@ -7,7 +7,7 @@ import re
 
 class HTTP_server:
 
-    http_ver = "HTTP/1.1 "
+    HTTP_VER = "HTTP/1.1 "
 
     def __init__(self, host='127.0.0.1', port=10002):
         self.host = host
@@ -77,7 +77,7 @@ class HTTP_server:
                     request_target_file = open("./404-page.html", "r")
                     content_length_header = "Content-Length: " + str(sys.getsizeof(request_target_file))
 
-            response_start_line = self.http_ver + response_status_code
+            response_start_line = self.HTTP_VER + response_status_code
             date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
             content_type_header = self.get_content_mime_type(request_target)
             temp_response = response_start_line + "\r\n" + date_header + "\r\n" + content_length_header + "\r\n" + content_type_header + "\r\n"
@@ -129,7 +129,7 @@ class HTTP_server:
                     request_target_file = open("./404-page.html", "r")
                     content_length_header = "Content-Length: " + str(sys.getsizeof(request_target_file))
 
-            response_start_line = self.http_ver + response_status_code
+            response_start_line = self.HTTP_VER + response_status_code
             date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
             content_type_header = self.get_content_mime_type(request_target)
 
@@ -143,7 +143,7 @@ class HTTP_server:
             print("OPTIONS request confirmed")
 
             response_status_code = "204 No Content"
-            response_start_line = self.http_ver + response_status_code
+            response_start_line = self.HTTP_VER + response_status_code
             allowed_option_header = "OPTIONS, HEAD, GET"
             date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
 
@@ -156,7 +156,7 @@ class HTTP_server:
         elif (("POST" in request_start_line[0:4]) or ("PUT" in request_start_line[0:3]) OR ("DELETE" in request_start_line[0:6]) or ("CONNECT" in request_start_line[0:7]) or ("TRACE" in request_start_line[0:5]) or ("PATCH" in request_start_line[0:5])):
 
             response_status_code = "501 Not Implemented"
-            response_start_line = self.http_ver + response_status_code
+            response_start_line = self.HTTP_VER + response_status_code
             response_message = response_start_line.encode(encoding="utf-8")
 
             return response_message
@@ -165,7 +165,7 @@ class HTTP_server:
             print("Invalid request recieved")
 
             response_status_code = "400 Bad Request"
-            response_start_line = self.http_ver + response_status_code
+            response_start_line = self.HTTP_VER + response_status_code
             body_response = b"""
             {
                 "error": "Bad Request",
