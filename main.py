@@ -117,8 +117,8 @@ class HTTP_server:
             # manually set the request target as the index page so there's a default page
             request_target = "./index.html"
 
+            # read and save the requested file as a variable
             request_target_file = open(request_target, "r")
-            content_length_header = "Content-Length: " + str(sys.getsizeof(request_target_file))
             response_status_code = "200 OK"
 
         # no reason to call any but else since can just use except to throw a 400 or 404
@@ -126,7 +126,6 @@ class HTTP_server:
         else:
             try:
                 request_target_file = open(request_target, "r")
-                content_length_header = "Content-Length: " + str(sys.getsizeof(request_target_file))
                 response_status_code = "200 OK"
             except:
                 # The reuested item wasn't found, return a 404 respose
@@ -134,22 +133,29 @@ class HTTP_server:
 
                 # change the request_target file to the stock 404 file to avoid renaming variables or adding checks. Allows users to edit 404 page
                 request_target_file = open("./404-page.html", "r")
-                content_length_header = "Content-Length: " + str(sys.getsizeof(request_target_file))
 
+        # set the length of the content header to size of file
+        content_length_header = "Content-Length: " + str(sys.getsizeof(request_target_file))
+        # combine http version and response code for http response
         response_start_line = self.HTTP_VER + response_status_code
+        # generate the date header of http response
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
         content_type_header = self.get_content_mime_type(request_target)
         temp_response = response_start_line + "\r\n" + date_header + "\r\n" + content_length_header + "\r\n" + content_type_header + "\r\n"
 
+        # read and split the lines of the html file read
         http_page_line_array = request_target_file.read().splitlines()
         http_page_line = ""
 
-        # loops through the lines in the request_target_file as an array
+        # loops through the lines in the request_target_file as an array and joins the html file back together with a line between them
         for x in range(len(http_page_line_array)):
             http_page_line = http_page_line + "\r\n" + http_page_line_array[x]
 
+        # encode the response from ascii to bytes
         temp_response_bytes = temp_response.encode(encoding="utf-8")
+        # encode the http page from ascii to bytes
         http_page_lines_bytes = http_page_line.encode(encoding="utf-8")
+        # join the http header and the body to form the response message
         response_message = b"".join([temp_response_bytes, http_page_lines_bytes])
 
         return response_message
@@ -244,9 +250,7 @@ class HTTP_server:
     def get_content_mime_type(self, request_target):
         # quick function to get the mime type and then throw it back so this isn't repeated multiple times'
         content_type = mimetypes.guess_type(request_target)
-
         #print("mime type of request-target is", content_type[0])
-
         content_type_header = "Content-Type: " + str(content_type[0])
         print(content_type_header)
         return content_type_header
