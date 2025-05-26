@@ -1,5 +1,10 @@
 # HTTP-server-project
-A personal project to make an HTTP server in python.
+A personal project to make an HTTP server in python while attempting to use a minimal amount of libraries/modules imported.
 
-Server is intended to be capable of receiving and processing GET, HEAD and OPTIONS request methods.
-- Currently capable of GET, HEAD and OPTIONS requests
+Server is capable of GET, HEAD and OPTIONS request methods.
+
+## Run
+```
+python ./main.py
+```
+There isn't much to it.
