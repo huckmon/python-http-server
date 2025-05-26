@@ -29,7 +29,7 @@ class HTTP_server:
         server_socket.bind((self.host, self.port))
         # listen for incoming connection(s)
         server_socket.listen(self.TOTAL_CONNECTIONS)
-        print('listening at', server_socket.getsockname())
+        print('listening at :', server_socket.getsockname())
 
         while True:
             # accept a connection. The return value is a pair (connection, address)
@@ -40,7 +40,6 @@ class HTTP_server:
             # recieve data from the socket. Specify a maximum amount of data to be read at once (currently first 1024 bytes)
             data = connection.recv(self.DATA_TO_READ)
 
-            # Generate the response message by calling the request_handler function with the data recieved from the connection as input
             response_message = self.request_handler(data)
             # send back data to the client
             connection.sendall(response_message)
@@ -175,25 +174,22 @@ class HTTP_server:
 
         try:
             if(request_target != "/"):
-                request_target = request_target.strip('/')
-                print(f'Opening and reading request target: {request_target}')
+                request_target = request_target[1:]
             else:
                 request_target = "index.html"
-                print(f'Opening and reading target: {request_target}')
 
+            print(f'Opening and reading request target: {request_target}')
             with open(request_target, "rb") as f:
                     request_target_file = f.read()
 
             self.response_status_code = "200 OK"
             return request_target_file
+
         except Exception as e:
             print(e)
-            print("opening/reading requested file failed")
-
             self.response_status_code = "404 Not Found"
             self.is_404 = True;
             #request_target_file = open("./404-page.html", "rb")
-
             request_target_file = "fail".encode(encoding="utf-8")
 
         return request_target_file
@@ -209,20 +205,18 @@ class HTTP_server:
             content_type_header = "Content-Type: " + content_type[0]
             print(content_type_header)
             return content_type_header
-        # throw exception if can't get mime type (usually means file doesn't exist)
         except:
             return
 
     def get_content_length(self, request_target):
-        # set the length of the content header to size of file
         try:
             content_length_header = "Content-Length: " + str(request_target_file.__sizeof__())
             #content_length_header = "Content-Length: " + str(sys.getsizeof(request_target))
-        except Exception as p:
-            print(p)
+        except Exception as e:
+            print(e)
             content_length_header = "Content-Length: 0"
-
         print(f'Sending {content_length_header}')
+        return content_length_header
 
 if __name__ == '__main__':
     # start the http server when script is executed
