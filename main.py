@@ -18,7 +18,7 @@ class HTTP_server:
     response_status_code = None
 
     # initial function that declares the host and port for the http server
-    def __init__(self, host='127.0.0.1', port=10001):
+    def __init__(self, host='127.0.0.1', port=10002):
         self.host = host
         self.port = port
 
@@ -108,7 +108,7 @@ class HTTP_server:
         response_str = response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n"
         response_bytes = response_str.encode(encoding="utf-8")
 
-        if ((self.is_404 is True) or (request_target_file == "fail")):
+        if ((self.is_404 is True) or (body_response == "fail")):
             print("returning 404 reponse")
             response_message = response_bytes
         else:
@@ -173,33 +173,28 @@ class HTTP_server:
 
     def parse_request_target(self, request_target):
 
-        # if pointing at root, redirect to index file
-        if (request_target == "/"):
-            self.response_status_code = "200 OK"
-            request_target = "index.html"
-            print(f'Opening and reading target: {request_target}')
+        try:
+            if(request_target != "/"):
+                request_target = request_target.strip('/')
+                print(f'Opening and reading request target: {request_target}')
+            else:
+                request_target = "index.html"
+                print(f'Opening and reading target: {request_target}')
 
             with open(request_target, "rb") as f:
                     request_target_file = f.read()
 
-        else:
-            request_target = request_target.strip('/')
-            try:
-                self.response_status_code = "200 OK"
-                print(f'Opening and reading request target: {request_target}')
+            self.response_status_code = "200 OK"
+            return request_target_file
+        except Exception as e:
+            print(e)
+            print("opening/reading requested file failed")
 
-                with open(request_target, "rb") as f:
-                    request_target_file = f.read()
+            self.response_status_code = "404 Not Found"
+            self.is_404 = True;
+            #request_target_file = open("./404-page.html", "rb")
 
-            except Exception as e:
-                print(e)
-                print("opening/reading requested file failed")
-
-                self.response_status_code = "404 Not Found"
-                self.is_404 = True;
-                #request_target_file = open("./404-page.html", "rb")
-
-                request_target_file = "fail".encode(encoding="utf-8")
+            request_target_file = "fail".encode(encoding="utf-8")
 
         return request_target_file
 
