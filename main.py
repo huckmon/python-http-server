@@ -4,10 +4,10 @@ import datetime
 
 class HTTP_server:
 
-    # Needs the trailing whitespace for .
+    # Needs the trailing whitespace for less work in other areas
     HTTP_VER = "HTTP/1.1 "
-    TOTAL_CONNECTIONS = 1
-    DATA_TO_READ = 1024
+    MAX_CONNECTIONS = 1
+    TOTAL_BYTES_TO_READ = 1024
     BLANK_LINE = "\r\n".encode(encoding="utf-8")
 
     client_method = None
@@ -19,30 +19,25 @@ class HTTP_server:
         self.port = port
 
     def start(self):
-        # Creates a TCP/IP socket using INET (ipv4) address family and Sock Stream (sock stream is a SocketKind)
+        # AF_INET is ipv4 address family. SOCK_STREAM is a SocketKind
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # binds the socket to the port
         server_socket.bind((self.host, self.port))
-        # listen for incoming connection(s)
-        server_socket.listen(self.TOTAL_CONNECTIONS)
-        print('listening at :', server_socket.getsockname())
+        server_socket.listen(self.MAX_CONNECTIONS)
+        print('listening at:', server_socket.getsockname())
 
         while True:
-            # accept a connection. The return value is a pair (connection, address)
-            # connection is a new socket object usable to send and recieve data on the connection (i.e. connecting socket)
-            # client_address is the address bound to the socket on the other end of the connection
+            # client_addr is a pair (connection, address). connection is a new socket object to send and recieve data to client
             connection, client_addr = server_socket.accept()
-            print(f'Connection accepted from {client_addr}')
-            # recieve data from the socket. Specify a maximum amount of data to be read at once (currently first 1024 bytes)
-            data = connection.recv(self.DATA_TO_READ)
+            print(f'Connection Accepted from: {client_addr}')
+            data = connection.recv(self.TOTAL_BYTES_TO_READ)
 
             response_message = self.request_handler(data)
-            # send back data to the client
             connection.sendall(response_message)
-            print(f'Response Sent to {client_addr}')
+            print(f'Response to Client: {self.HTTP_VER, self.response_status_code}')
+            print(f'Response Sent to: {client_addr}')
 
             connection.close()
-            print(f'Connection Closed to {client_addr}' + "\r\n" + '---------------------------')
+            print(f'Connection Closed to: {client_addr} \r\n---------------------------')
 
     def request_handler(self, data):
 
@@ -50,7 +45,7 @@ class HTTP_server:
         data = data.decode("utf-8")
         data_array = data.splitlines()
         request_start_line = data_array[0].split(" ")
-        print('request_start_line :' + str(request_start_line))
+        print(f'Client Request line : {str(request_start_line)}')
         self.client_method = request_start_line[0]
 
         # two if staments get around issue of browsers that don't send URI for homepages
@@ -59,6 +54,11 @@ class HTTP_server:
 
         if len(request_start_line) > 3:
             request_target = request_start_line[2]
+
+        if(request_target != "/"):
+            request_target = request_target[1:]
+        else:
+            request_target = "index.html"
 
         match self.client_method:
             case "GET":
@@ -103,8 +103,7 @@ class HTTP_server:
         response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
 
         if ((self.is_404 is True) or (body_response == "fail")):
-            print("returning 404 reponse")
-            response_message = response_encoded
+            response_message = response_headers
         else:
             response_message = b"".join([response_headers, self.BLANK_LINE, body_response])
 
@@ -145,7 +144,6 @@ class HTTP_server:
 
     # Function for returning a bad request method/400 response code
     def invalid_request_method(self, request_start_line):
-        print("Invalid request recieved")
 
         self.response_status_code = "400 Bad Request"
         response_start_line = self.HTTP_VER + self.response_status_code
@@ -165,11 +163,6 @@ class HTTP_server:
     def parse_request_target(self, request_target):
 
         try:
-            if(request_target != "/"):
-                request_target = request_target[1:]
-            else:
-                request_target = "index.html"
-
             print(f'Opening and reading request target: {request_target}')
             with open(request_target, "rb") as f:
                     request_target_file = f.read()
@@ -186,16 +179,10 @@ class HTTP_server:
 
         return request_target_file
 
-    # function gets the MIME type of input
     def get_content_mime_type(self, request_target):
         try:
-            if (request_target == "/"):
-                request_target = "index.html"
-            # quick function to get the mime type and then throw it back so this isn't repeated multiple times
-            content_type = mimetypes.guess_type(request_target)
-            #print("mime type of request-target is", content_type[0])
-            content_type_header = "Content-Type: " + content_type[0]
-            print(content_type_header)
+            content_type_header = "Content-Type: " + mimetypes.guess_type(request_target)[0]
+            print(f'Requested Content Type is: \"{content_type_header}\"')
             return content_type_header
         except:
             return
@@ -207,11 +194,9 @@ class HTTP_server:
         except Exception as e:
             print(e)
             content_length_header = "Content-Length: 0"
-        print(f'Sending {content_length_header}')
+        print(f'Returning content length: \"{content_length_header}\"')
         return content_length_header
 
 if __name__ == '__main__':
-    # start the http server when script is executed
-
     server = HTTP_server()
     server.start()
