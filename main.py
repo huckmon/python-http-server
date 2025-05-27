@@ -4,20 +4,16 @@ import datetime
 
 class HTTP_server:
 
-    # A constant used the append the http version. This should never change. Always needs a space afterwards for less code.
+    # Needs the trailing whitespace for .
     HTTP_VER = "HTTP/1.1 "
     TOTAL_CONNECTIONS = 1
     DATA_TO_READ = 1024
     BLANK_LINE = "\r\n".encode(encoding="utf-8")
 
-    # variables for client request
-    client_uri = None
-    client_http_ver = None
     client_method = None
     is_404 = None
     response_status_code = None
 
-    # initial function that declares the host and port for the http server
     def __init__(self, host='127.0.0.1', port=10002):
         self.host = host
         self.port = port
@@ -104,14 +100,13 @@ class HTTP_server:
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
         content_type_header = self.get_content_mime_type(request_target)
 
-        response_str = response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n"
-        response_bytes = response_str.encode(encoding="utf-8")
+        response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
 
         if ((self.is_404 is True) or (body_response == "fail")):
             print("returning 404 reponse")
-            response_message = response_bytes
+            response_message = response_encoded
         else:
-            response_message = b"".join([response_bytes, self.BLANK_LINE, body_response])
+            response_message = b"".join([response_headers, self.BLANK_LINE, body_response])
 
         return response_message
 
@@ -124,10 +119,9 @@ class HTTP_server:
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
         content_type_header = self.get_content_mime_type(request_target)
 
-        response = response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n"
-        response_message = response.encode(encoding="utf-8")
+        response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
 
-        return response_message
+        return response_headers
 
     # Function for receiving OPTIONS methods
     def options_method_received(self, request_start_line):
@@ -137,19 +131,17 @@ class HTTP_server:
         allowed_option_header = "OPTIONS, HEAD, GET"
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
 
-        response = response_start_line + "\r\n" + allowed_option_header + "\r\n" + date_header + "\r\n"
-        response_message = response.encode(encoding="utf-8")
+        response_headers = (response_start_line + "\r\n" + allowed_option_header + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
 
-        return response_message
+        return response_headers
 
     # Function for recieving unimplemented methods
     def not_implemented_response(self, request_start_line):
 
         self.response_status_code = "501 Not Implemented"
-        response_start_line = self.HTTP_VER + self.response_status_code
-        response_message = response_start_line.encode(encoding="utf-8")
+        response_headers = (self.HTTP_VER + self.response_status_code).encode(encoding="utf-8")
 
-        return response_message
+        return response_headers
 
     # Function for returning a bad request method/400 response code
     def invalid_request_method(self, request_start_line):
@@ -164,9 +156,9 @@ class HTTP_server:
         }
         """
 
-        response_str = response_start_line + "\r\n"
-        response_bytes = response.encode(encoding="utf-8")
-        response_message = b"".join([response_bytes, body_response])
+        response_raw = response_start_line + "\r\n"
+        response_encoded = response.encode(encoding="utf-8")
+        response_message = b"".join([response_encoded, body_response])
 
         return response_message
 
