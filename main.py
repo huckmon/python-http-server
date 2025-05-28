@@ -4,7 +4,7 @@ import datetime
 
 class HTTP_server:
 
-    # Needs the trailing whitespace for less work in other areas
+    # Needs the trailing whitespace to avoid multiple `+ " "` in other areas of the code
     HTTP_VER = "HTTP/1.1 "
     MAX_CONNECTIONS = 1
     TOTAL_BYTES_TO_READ = 1024
@@ -19,14 +19,12 @@ class HTTP_server:
         self.port = port
 
     def start(self):
-        # AF_INET is ipv4 address family. SOCK_STREAM is a SocketKind
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((self.host, self.port))
         server_socket.listen(self.MAX_CONNECTIONS)
         print('listening at:', server_socket.getsockname())
 
         while True:
-            # client_addr is a pair (connection, address). connection is a new socket object to send and recieve data to client
             connection, client_addr = server_socket.accept()
             print(f'Connection Accepted from: {client_addr}')
             data = connection.recv(self.TOTAL_BYTES_TO_READ)
@@ -48,8 +46,8 @@ class HTTP_server:
         print(f'Client Request line : {str(request_start_line)}')
         self.client_method = request_start_line[0]
 
-        # two if staments get around issue of browsers that don't send URI for homepages
         if len(request_start_line) > 2:
+            # this statment gets around issue of some browsers not sending a URI for homepages
             request_target = request_start_line[1]
 
         if len(request_start_line) > 3:
