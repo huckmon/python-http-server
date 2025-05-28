@@ -14,7 +14,7 @@ class HTTP_server:
     is_404 = None
     response_status_code = None
 
-    def __init__(self, host='127.0.0.1', port=10002):
+    def __init__(self, host='127.0.0.1', port=10001):
         self.host = host
         self.port = port
 
@@ -65,7 +65,7 @@ class HTTP_server:
                 response = self.get_method_received(request_start_line, request_target)
                 return response
             case "HEAD":
-                response = self.head_method_received(request_start_line)
+                response = self.head_method_received(request_start_line, request_target)
                 return response
             case "OPTIONS":
                 response = self.options_method_received(request_start_line)
@@ -109,10 +109,9 @@ class HTTP_server:
 
         return response_message
 
-    # Function when receiving HEAD methods
     def head_method_received(self, request_start_line, request_target):
 
-        body_response = parse_request_target(request_target)
+        body_response = self.parse_request_target(request_target)
 
         response_start_line = self.HTTP_VER + self.response_status_code
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
@@ -122,19 +121,17 @@ class HTTP_server:
 
         return response_headers
 
-    # Function for receiving OPTIONS methods
     def options_method_received(self, request_start_line):
 
         self.response_status_code = "204 No Content"
         response_start_line = self.HTTP_VER + self.response_status_code
-        allowed_option_header = "OPTIONS, HEAD, GET"
+        allowed_option_header = "Allow: OPTIONS, HEAD, GET" # hard coded because I'm  lazy and I don't intend to add more methods currently
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
 
         response_headers = (response_start_line + "\r\n" + allowed_option_header + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
 
         return response_headers
 
-    # Function for recieving unimplemented methods
     def not_implemented_response(self, request_start_line):
 
         self.response_status_code = "501 Not Implemented"
@@ -142,7 +139,6 @@ class HTTP_server:
 
         return response_headers
 
-    # Function for returning a bad request method/400 response code
     def invalid_request_method(self, request_start_line):
 
         self.response_status_code = "400 Bad Request"
@@ -190,7 +186,6 @@ class HTTP_server:
     def get_content_length(self, request_target):
         try:
             content_length_header = "Content-Length: " + str(request_target_file.__sizeof__())
-            #content_length_header = "Content-Length: " + str(sys.getsizeof(request_target))
         except Exception as e:
             print(e)
             content_length_header = "Content-Length: 0"
