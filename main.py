@@ -5,15 +5,14 @@ import re
 
 class HTTP_server:
 
-    # Needs the trailing whitespace to avoid multiple `+ " "` additions in other areas of the code
+    # Has trailing whitespace to avoid multiple `+ " "` additions in other areas of the code
     HTTP_VER = "HTTP/1.1 "
     MAX_CONNECTIONS = 1
     TOTAL_BYTES_TO_READ = 1024
     BLANK_LINE = "\r\n".encode(encoding="utf-8")
 
     client_method = None
-    is_404 = None
-    response_status_code = None
+    response_code = None
     request_target = None
 
     def __init__(self, host='127.0.0.1', port=10002):
@@ -33,14 +32,13 @@ class HTTP_server:
 
             response_message = self.request_handler(data)
             connection.sendall(response_message)
-            print(f'Response to Client: {self.HTTP_VER, self.response_status_code} at {client_addr}')
+            print(f'Response to Client: {self.HTTP_VER + self.response_code} at {client_addr}')
 
             connection.close()
             print(f'Connection Closed to: {client_addr} \r\n---------------------------')
 
     def request_handler(self, data):
 
-        self.is_404 = False
         data = data.decode("utf-8")
         data_array = data.splitlines()
         request_start_line = data_array[0].split(" ")
@@ -87,17 +85,14 @@ class HTTP_server:
 
         body_response = self.parse_request_target(self.request_target)
 
-        response_start_line = self.HTTP_VER + self.response_status_code
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
         content_type_header = self.get_content_mime_type(self.request_target)
 
-        #response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
-
-        if ((self.is_404 is True) or (body_response == "fail")):
-            response_headers = (response_start_line + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
+        if ((self.response_code == "404 Not Found") or (body_response is None)):
+            response_headers = ((self.HTTP_VER + self.response_code) + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
             response_message = response_headers
         else:
-            response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
+            response_headers = ((self.HTTP_VER + self.response_code) + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
             response_message = b"".join([response_headers, self.BLANK_LINE, body_response])
 
         return response_message
@@ -106,59 +101,53 @@ class HTTP_server:
 
         body_response = self.parse_request_target(self.request_target)
 
-        response_start_line = self.HTTP_VER + self.response_status_code
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
         content_type_header = self.get_content_mime_type(self.request_target)
 
-        if ((self.is_404 is True) or (body_response == "fail")):
-            response_headers = (response_start_line + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
+        if ((self.response_code == "404 Not Found") or (body_response is None)):
+            response_headers = ((self.HTTP_VER + self.response_code) + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
             response_message = response_headers
         else:
-            response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
+            response_headers = ((self.HTTP_VER + self.response_code)+ "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
 
         return response_headers
 
     def options_method_received(self, request_start_line):
 
-        self.response_status_code = "204 No Content"
-        response_start_line = self.HTTP_VER + self.response_status_code
+        self.response_code = "204 No Content"
         allowed_option_header = "Allow: OPTIONS, HEAD, GET" # hard coded because I'm  lazy and I don't intend to add more methods currently
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
 
-        response_headers = (response_start_line + "\r\n" + allowed_option_header + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
+        response_headers = ((self.HTTP_VER + self.response_code) + "\r\n" + allowed_option_header + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
 
         return response_headers
 
     def not_implemented_response(self, request_start_line):
 
-        self.response_status_code = "501 Not Implemented"
-        response_headers = (self.HTTP_VER + self.response_status_code).encode(encoding="utf-8")
+        self.response_code = "501 Not Implemented"
+        response_headers = (self.HTTP_VER + self.response_code).encode(encoding="utf-8")
 
         return response_headers
 
     def invalid_request_method(self, request_start_line):
 
-        self.response_status_code = "400 Bad Request"
-        response_start_line = self.HTTP_VER + self.response_status_code
+        self.response_code = "400 Bad Request"
         body_response = b"""
         {
             "error": "Bad Request",
             "message": "Request body could not be read properly"
         }
         """
-        response_raw = response_start_line + "\r\n"
-        response_encoded = response.encode(encoding="utf-8")
-        response_message = b"".join([response_encoded, body_response])
+        response = ((self.HTTP_VER + self.response_code) + "\r\n").encode(encoding="utf-8")
+        response_message = b"".join([response, body_response])
 
         return response_message
 
     def parse_request_target(self, request_target):
 
         if( re.search(r'\.\.\/', self.request_target) != None ):
-            request_target_file = "fail".encode(encoding="utf-8")
-            self.response_status_code = "404 Not Found"
-            self.is_404 = True;
-            return request_target_file
+            self.response_code = "404 Not Found"
+            return None
         elif(self.request_target == "/"):
             self.request_target = "index.html"
         else:
@@ -169,15 +158,14 @@ class HTTP_server:
             with open(self.request_target, "rb") as f:
                     request_target_file = f.read()
 
-            self.response_status_code = "200 OK"
+            self.response_code = "200 OK"
             return request_target_file
 
         except Exception as e:
             print(e)
-            self.response_status_code = "404 Not Found"
-            self.is_404 = True;
+            self.response_code = "404 Not Found"
             #request_target_file = open("./404-page.html", "rb")
-            request_target_file = "fail".encode(encoding="utf-8")
+            return None
 
         return request_target_file
 
@@ -191,7 +179,7 @@ class HTTP_server:
 
     def get_content_length(self, request_target):
         try:
-            content_length_header = "Content-Length: " + str(request_target_file.__sizeof__())
+            content_length_header = "Content-Length: " + str(request_target.__sizeof__())
         except Exception as e:
             print(e)
             content_length_header = "Content-Length: 0"
