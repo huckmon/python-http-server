@@ -28,11 +28,11 @@ class HTTP_server:
         while True:
             connection, client_addr = server_socket.accept()
             print(f'Connection Accepted from: {client_addr}')
-            data = connection.recv(self.TOTAL_BYTES_TO_READ)
 
+            data = connection.recv(self.TOTAL_BYTES_TO_READ)
             response_message = self.request_handler(data)
             connection.sendall(response_message)
-            print(f'Response to Client: {self.HTTP_VER + self.response_code} at {client_addr}')
+            print(f'Response to Client: ({self.HTTP_VER + self.response_code}) at {client_addr}')
 
             connection.close()
             print(f'Connection Closed to: {client_addr} \r\n---------------------------')
