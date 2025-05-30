@@ -1,10 +1,11 @@
 import socket
 import mimetypes
 import datetime
+import re
 
 class HTTP_server:
 
-    # Needs the trailing whitespace to avoid multiple `+ " "` in other areas of the code
+    # Needs the trailing whitespace to avoid multiple `+ " "` additions in other areas of the code
     HTTP_VER = "HTTP/1.1 "
     MAX_CONNECTIONS = 1
     TOTAL_BYTES_TO_READ = 1024
@@ -13,8 +14,9 @@ class HTTP_server:
     client_method = None
     is_404 = None
     response_status_code = None
+    request_target = None
 
-    def __init__(self, host='127.0.0.1', port=10001):
+    def __init__(self, host='127.0.0.1', port=10002):
         self.host = host
         self.port = port
 
@@ -31,8 +33,7 @@ class HTTP_server:
 
             response_message = self.request_handler(data)
             connection.sendall(response_message)
-            print(f'Response to Client: {self.HTTP_VER, self.response_status_code}')
-            print(f'Response Sent to: {client_addr}')
+            print(f'Response to Client: {self.HTTP_VER, self.response_status_code} at {client_addr}')
 
             connection.close()
             print(f'Connection Closed to: {client_addr} \r\n---------------------------')
@@ -46,24 +47,16 @@ class HTTP_server:
         print(f'Client Request line : {str(request_start_line)}')
         self.client_method = request_start_line[0]
 
-        if len(request_start_line) > 2:
+        if len(request_start_line) > 1:
             # this statment gets around issue of some browsers not sending a URI for homepages
-            request_target = request_start_line[1]
-
-        if len(request_start_line) > 3:
-            request_target = request_start_line[2]
-
-        if(request_target != "/"):
-            request_target = request_target[1:]
-        else:
-            request_target = "index.html"
+            self.request_target = request_start_line[1]
 
         match self.client_method:
             case "GET":
-                response = self.get_method_received(request_start_line, request_target)
+                response = self.get_method_received(request_start_line, self.request_target)
                 return response
             case "HEAD":
-                response = self.head_method_received(request_start_line, request_target)
+                response = self.head_method_received(request_start_line, self.request_target)
                 return response
             case "OPTIONS":
                 response = self.options_method_received(request_start_line)
@@ -92,30 +85,36 @@ class HTTP_server:
 
     def get_method_received(self, request_start_line, request_target):
 
-        body_response = self.parse_request_target(request_target)
+        body_response = self.parse_request_target(self.request_target)
 
         response_start_line = self.HTTP_VER + self.response_status_code
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
-        content_type_header = self.get_content_mime_type(request_target)
+        content_type_header = self.get_content_mime_type(self.request_target)
 
-        response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
+        #response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
 
         if ((self.is_404 is True) or (body_response == "fail")):
+            response_headers = (response_start_line + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
             response_message = response_headers
         else:
+            response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
             response_message = b"".join([response_headers, self.BLANK_LINE, body_response])
 
         return response_message
 
     def head_method_received(self, request_start_line, request_target):
 
-        body_response = self.parse_request_target(request_target)
+        body_response = self.parse_request_target(self.request_target)
 
         response_start_line = self.HTTP_VER + self.response_status_code
         date_header = datetime.datetime.now().strftime("Date: %a, %d, %b, %Y, %H:%M:%S GMT")
-        content_type_header = self.get_content_mime_type(request_target)
+        content_type_header = self.get_content_mime_type(self.request_target)
 
-        response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
+        if ((self.is_404 is True) or (body_response == "fail")):
+            response_headers = (response_start_line + "\r\n" + date_header + "\r\n").encode(encoding="utf-8")
+            response_message = response_headers
+        else:
+            response_headers = (response_start_line + "\r\n" + date_header + "\r\n" + content_type_header + "\r\n").encode(encoding="utf-8")
 
         return response_headers
 
@@ -147,7 +146,6 @@ class HTTP_server:
             "message": "Request body could not be read properly"
         }
         """
-
         response_raw = response_start_line + "\r\n"
         response_encoded = response.encode(encoding="utf-8")
         response_message = b"".join([response_encoded, body_response])
@@ -156,9 +154,19 @@ class HTTP_server:
 
     def parse_request_target(self, request_target):
 
+        if( re.search(r'\.\.\/', self.request_target) != None ):
+            request_target_file = "fail".encode(encoding="utf-8")
+            self.response_status_code = "404 Not Found"
+            self.is_404 = True;
+            return request_target_file
+        elif(self.request_target == "/"):
+            self.request_target = "index.html"
+        else:
+            self.request_target = self.request_target[1:]
+
         try:
-            print(f'Opening and reading request target: {request_target}')
-            with open(request_target, "rb") as f:
+            print(f'Opening and reading request target: {self.request_target}')
+            with open(self.request_target, "rb") as f:
                     request_target_file = f.read()
 
             self.response_status_code = "200 OK"
